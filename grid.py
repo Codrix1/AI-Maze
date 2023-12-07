@@ -3,9 +3,10 @@ import customtkinter as ctk
 
 class GridApp:
     def __init__(self, root):
+        # Initialize the root window
         self.root = root
-        self.root.configure(bg='#87CEFA')
-        self.root.title("Interactive Grid")
+        self.root.configure(bg='#87CEFA')  # Set background color
+        self.root.title("Interactive Grid")  # Set window title
 
         # Initialize variables for grid dimensions
         self.width_var = tk.StringVar()
@@ -48,6 +49,7 @@ class GridApp:
             # Delete the existing canvas
             self.grid_canvas.delete("all")
 
+            # Get the width and height from the user inputs
             width = int(self.width_var.get())
             height = int(self.height_var.get())
 
@@ -104,4 +106,4 @@ class GridApp:
 if __name__ == "__main__":
     root = tk.Tk()
     app = GridApp(root)
-    root.mainloop()
+    root.mainloop()  # Start the application's main loop
