@@ -20,29 +20,66 @@ class GridApp:
         self.main_frame = ctk.CTkFrame(master=self.root)
         self.main_frame.pack(fill='both', expand=True, padx=20, pady=20)
 
+        # Create the left frame
+        self.left_frame = ctk.CTkFrame(master=self.main_frame)
+        self.left_frame.pack(side='left', fill='y', padx=20, pady=20)
+
+        # Create a frame for the canvas and scrollbars
+        self.canvas_frame = ctk.CTkFrame(master=self.main_frame)
+        self.canvas_frame.pack(side='right', fill='both', expand=True)
+
+        # Create scrollbars
+        self.v_scrollbar = tk.Scrollbar(self.canvas_frame, orient='vertical')
+        self.v_scrollbar.pack(side='right', fill='y')
+
+        self.h_scrollbar = tk.Scrollbar(self.canvas_frame, orient='horizontal')
+        self.h_scrollbar.pack(side='bottom', fill='x')
+
         # Canvas for the grid
-        self.grid_canvas = tk.Canvas(master=self.main_frame, bg="#ADD8E6")
-        self.grid_canvas.pack(padx=20, pady=20)
+        self.grid_canvas = tk.Canvas(master=self.canvas_frame, bg="#ADD8E6",
+                                      xscrollcommand=self.h_scrollbar.set,
+                                      yscrollcommand=self.v_scrollbar.set)
+        self.grid_canvas.pack(side='left', fill='both', expand=True)
+
+        # Configure the scrollbars to move the canvas
+        self.h_scrollbar.config(command=self.grid_canvas.xview)
+        self.v_scrollbar.config(command=self.grid_canvas.yview)
+
+        # Bind the mousewheel scroll event
+        self.root.bind("<Control-MouseWheel>", self.zoom)
 
         # Label and Entry for grid width
-        width_label = ctk.CTkLabel(master=self.main_frame, text="Width:")
+        width_label = ctk.CTkLabel(master=self.left_frame, text="Width:")
         width_label.pack(padx=5, pady=5)
 
-        width_entry = ctk.CTkEntry(master=self.main_frame, textvariable=self.width_var)
+        width_entry = ctk.CTkEntry(master=self.left_frame, textvariable=self.width_var)
         width_entry.pack(padx=5, pady=5)
 
         # Label and Entry for grid height
-        height_label = ctk.CTkLabel(master=self.main_frame, text="Height:")
+        height_label = ctk.CTkLabel(master=self.left_frame, text="Height:")
         height_label.pack(padx=5, pady=5)
 
-        height_entry = ctk.CTkEntry(master=self.main_frame, textvariable=self.height_var)
+        height_entry = ctk.CTkEntry(master=self.left_frame, textvariable=self.height_var)
         height_entry.pack(padx=5, pady=5)
 
         # Button to create the grid
         create_button = ctk.CTkButton(
-            master=self.main_frame, text="Create Grid", command=self.create_grid
+            master=self.left_frame, text="Create Grid", command=self.create_grid
         )
         create_button.pack(pady=10)
+
+        # Add your 4 new buttons here
+        Walls = ctk.CTkButton(master=self.left_frame, text="Walls")
+        Walls.pack(pady=10)
+
+        start = ctk.CTkButton(master=self.left_frame, text="start")
+        start.pack(pady=10)
+
+        Goal = ctk.CTkButton(master=self.left_frame, text="Goal")
+        Goal.pack(pady=10)
+
+        Create_Maze = ctk.CTkButton(master=self.left_frame, text="Create Maze")
+        Create Maze.pack(pady=10)
 
     def create_grid(self):
         try:
@@ -74,14 +111,45 @@ class GridApp:
                     )
 
                     # Add the square to the dictionary
-                    self.squares[(row, col)] = {"Xpos": row, "Ypos": col, "rectangle": rectangle, "color": color}
+                    self.squares[(row, col)] = {"Xpos": row, "Ypos": col, "rectangle": rectangle, "color": color , "type":"empty"} 
 
             # Create event listeners for the squares
             self.create_event_listeners()
+            self.update_scroll_region()
 
         except ValueError:
             return
+        
+    def update_scroll_region(self):
+        self.grid_canvas.update_idletasks()
+        self.grid_canvas.config(scrollregion=self.grid_canvas.bbox('all'))   
+         
+    def zoom(self, event):
+    # Zoom in and out when the ctrl key and mouse wheel are used
+        scale = 1.0
+        if event.delta > 0:
+            # Zoom in
+            scale += 0.1
+        elif event.delta < 0:
+            # Zoom out
+            scale -= 0.1
+            
+            
+    def zoom(self, event):
+    # Zoom in and out when the ctrl key and mouse wheel are used
+        scale = 1.0
+        if event.delta > 0:
+            # Zoom in
+            scale += 0.1
+        elif event.delta < 0:
+            # Zoom out
+            scale -= 0.1
 
+    # Scale the canvas
+        self.grid_canvas.scale("all", 0, 0, scale, scale)
+        self.update_scroll_region()    
+        
+            
     def create_event_listeners(self):
         # Iterate over all squares
         for (x1, y1), square in self.squares.items():
