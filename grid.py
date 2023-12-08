@@ -3,6 +3,9 @@ import customtkinter as ctk
 
 class GridApp:
     def __init__(self, root):
+        self.zoom_level = 1.0
+        self.agent_square = None
+        self.Goal_square = None
         # Initialize the root window
         self.root = root
         self.root.configure(bg='#87CEFA')  # Set background color
@@ -69,22 +72,40 @@ class GridApp:
         create_button.pack(pady=10)
 
         # Add your 4 new buttons here
-        Walls = ctk.CTkButton(master=self.left_frame, text="Walls")
+        Walls = ctk.CTkButton(master=self.left_frame, text="Walls" , command=self.walls)
         Walls.pack(pady=10)
 
-        start = ctk.CTkButton(master=self.left_frame, text="start")
+        start = ctk.CTkButton(master=self.left_frame, text="start" , command=self.start)
         start.pack(pady=10)
 
-        Goal = ctk.CTkButton(master=self.left_frame, text="Goal")
+        Goal = ctk.CTkButton(master=self.left_frame, text="Goal" , command=self.Goal)
         Goal.pack(pady=10)
 
         Create_Maze = ctk.CTkButton(master=self.left_frame, text="Create Maze")
-        Create Maze.pack(pady=10)
-
+        Create_Maze.pack(pady=10)
+        Print_Grid = ctk.CTkButton(master=self.left_frame, text="Print Grid", command=self.print_squares)
+        Print_Grid.pack(pady=10)
+        # Initialize mode
+        self.mode = "normal"
+        
+    def walls(self):
+        self.mode = "walls"
+        
+    def start(self):
+        self.mode = "start"    
+        
+    def Goal(self):
+        self.mode = "Goal"       
+        
     def create_grid(self):
         try:
             # Delete the existing canvas
             self.grid_canvas.delete("all")
+
+            # Reset the squares dictionary, the agent square, and the Goal square
+            self.squares = {}
+            self.agent_square = None
+            self.Goal_square = None
 
             # Get the width and height from the user inputs
             width = int(self.width_var.get())
@@ -97,7 +118,7 @@ class GridApp:
 
             # Dictionary to store the squares
             self.squares = {}
-
+            #self.squares.clear()
             # Draw the grid of squares
             for row in range(height):
                 for col in range(width):
@@ -111,7 +132,7 @@ class GridApp:
                     )
 
                     # Add the square to the dictionary
-                    self.squares[(row, col)] = {"Xpos": row, "Ypos": col, "rectangle": rectangle, "color": color , "type":"empty"} 
+                    self.squares[(row, col)] = {"Xpos": row, "Ypos": col, "rectangle": rectangle, "color": color , "type":"empty"  } 
 
             # Create event listeners for the squares
             self.create_event_listeners()
@@ -120,56 +141,90 @@ class GridApp:
         except ValueError:
             return
         
+        
+    def print_squares(self):
+        for key, value in self.squares.items():
+            print(f"{key}: {value}\n")
     def update_scroll_region(self):
         self.grid_canvas.update_idletasks()
         self.grid_canvas.config(scrollregion=self.grid_canvas.bbox('all'))   
-         
-    def zoom(self, event):
-    # Zoom in and out when the ctrl key and mouse wheel are used
-        scale = 1.0
-        if event.delta > 0:
-            # Zoom in
-            scale += 0.1
-        elif event.delta < 0:
-            # Zoom out
-            scale -= 0.1
-            
-            
-    def zoom(self, event):
-    # Zoom in and out when the ctrl key and mouse wheel are used
-        scale = 1.0
-        if event.delta > 0:
-            # Zoom in
-            scale += 0.1
-        elif event.delta < 0:
-            # Zoom out
-            scale -= 0.1
 
-    # Scale the canvas
-        self.grid_canvas.scale("all", 0, 0, scale, scale)
-        self.update_scroll_region()    
-        
             
+    def zoom(self, event):
+    # Zoom in and out when the ctrl key and mouse wheel are used
+        if event.delta > 0 and self.zoom_level < 2.0:  # Limit zoom in level
+            # Zoom in
+            self.zoom_level += 0.1
+        elif event.delta < 0 and self.zoom_level > 1.0:  # Limit zoom out level
+            # Zoom out
+            self.zoom_level -= 0.1
+
+        # Scale the canvas
+        self.grid_canvas.scale("all", 0, 0, self.zoom_level, self.zoom_level)
+        self.update_scroll_region()    
+    
+        
     def create_event_listeners(self):
         # Iterate over all squares
         for (x1, y1), square in self.squares.items():
             # Hover effect
-            def on_enter(event, rectangle=square["rectangle"], color=square["color"]):
-                self.grid_canvas.itemconfig(rectangle, fill="#B0E0E6", outline="#000", width=3)
-                self.squares[(x1, y1)]["state"] = "hover"
+            def on_enter(x, y):
+                if self.squares[(x, y)]["type"] == "empty":
+                    self.grid_canvas.itemconfig(self.squares[(x, y)]["rectangle"], fill="#B0E0E6", outline="#000", width=3)
 
-            def on_leave(event, rectangle=square["rectangle"], color=square["color"]):
-                self.grid_canvas.itemconfig(rectangle, fill=color, outline="black", width=2)
-                self.squares[(x1, y1)]["state"] = "normal"
+            def on_leave(x, y):
+                if self.squares[(x, y)]["type"] == "empty":
+                    self.grid_canvas.itemconfig(self.squares[(x, y)]["rectangle"], fill ="#ADD8E6", outline="black", width=2)
 
-            def on_click(event, x=x1, y=y1):  # capture current values of x1 and y1
-                print(f"Square clicked at grid coordinates ({x},{y})")
-                self.squares[(x, y)]["state"] = "clicked"
+            def on_click(x, y):
+                if self.mode == "walls" and self.squares[(x, y)]["type"] == "empty":
+                    self.grid_canvas.itemconfig(self.squares[(x, y)]["rectangle"], fill="dark blue")
+                    self.squares[(x, y)]["type"] = "wall"
+                if self.mode == "start" and self.squares[(x, y)]["type"] == "empty":
+                    if self.agent_square:
+                        # Reset the previous agent square
+                        self.grid_canvas.itemconfig(self.squares[self.agent_square]["rectangle"], fill="#ADD8E6")
+                        self.squares[self.agent_square]["type"] = "empty"
+                    # Set the new agent square
+                    self.grid_canvas.itemconfig(self.squares[(x, y)]["rectangle"], fill="green")
+                    self.squares[(x, y)]["type"] = "agent"
+                    self.agent_square = (x, y)
+                    
+                if self.mode == "Goal" and self.squares[(x, y)]["type"] == "empty" :
+                    if self.Goal_square:
+                        # Reset the previous Goal square
+                        self.grid_canvas.itemconfig(self.squares[self.Goal_square]["rectangle"], fill="#ADD8E6")
+                        self.squares[self.Goal_square]["type"] = "empty"
+                    # Set the new Goal square
+                    self.grid_canvas.itemconfig(self.squares[(x, y)]["rectangle"], fill="red")
+                    self.squares[(x, y)]["type"] = "Goal"
+                    self.Goal_square = (x, y)
+
+            def create_callback(func, x, y):
+                return lambda event: func(x, y)
 
             # Bind mouse events to the rectangle
-            self.grid_canvas.tag_bind(square["rectangle"], "<Enter>", on_enter)
-            self.grid_canvas.tag_bind(square["rectangle"], "<Leave>", on_leave)
-            self.grid_canvas.tag_bind(square["rectangle"], "<Button-1>", on_click)
+            self.grid_canvas.tag_bind(square["rectangle"], "<Button-1>", create_callback(on_click, x1, y1))
+            self.grid_canvas.tag_bind(square["rectangle"], "<Enter>", create_callback(on_enter, x1, y1))
+            self.grid_canvas.tag_bind(square["rectangle"], "<Leave>", create_callback(on_leave, x1, y1))
+
+        # Bind the on_drag function to the entire canvas
+        self.grid_canvas.bind("<B1-Motion>", self.on_drag)
+        
+    def on_drag(self, event):
+        # Get the current scroll position
+        x_scroll_pos = self.grid_canvas.canvasx(event.x)
+        y_scroll_pos = self.grid_canvas.canvasy(event.y)
+
+        # Calculate the grid coordinates of the square under the mouse
+        x = int((x_scroll_pos) // (30 * self.zoom_level))
+        y = int((y_scroll_pos) // (30 * self.zoom_level))
+
+        # Check if the coordinates are valid
+        if (x, y) in self.squares:
+            if self.mode == "walls":
+                self.grid_canvas.itemconfig(self.squares[(y, x)]["rectangle"], fill="dark blue")
+                self.squares[(y, x)]["type"] = "wall"
 
 if __name__ == "__main__":
     root = tk.Tk()
