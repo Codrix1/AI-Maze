@@ -79,8 +79,9 @@ class GridApp:
         Goal = ctk.CTkButton(master=self.left_frame, text="Goal" , command=self.Goal)
         Goal.pack(pady=10)
 
-        Create_Maze = ctk.CTkButton(master=self.left_frame, text="Create Maze")
+        Create_Maze = ctk.CTkButton(master=self.left_frame, text="Create Maze"  , command=self.Maze_Creation)
         Create_Maze.pack(pady=10)
+        
         Print_Grid = ctk.CTkButton(master=self.left_frame, text="Print Grid", command=self.print_squares)
         Print_Grid.pack(pady=10)
         # Initialize mode
@@ -94,6 +95,7 @@ class GridApp:
         
     def Goal(self):
         self.mode = "Goal"       
+    
         
     def create_grid(self):
         try:
@@ -130,7 +132,7 @@ class GridApp:
                     )
 
                     # Add the square to the dictionary
-                    self.squares[(row, col)] = { "rectangle": rectangle , "type":"empty"  } 
+                    self.squares[(row, col)] = { "rectangle": rectangle , "type":"empty" , "Up": True  , "Down":True , "Left":True , "Right":True} 
 
             # Create event listeners for the squares
             self.create_event_listeners()
@@ -148,8 +150,22 @@ class GridApp:
         self.grid_canvas.config(scrollregion=self.grid_canvas.bbox('all'))   
 
   
-    
-        
+    def Maze_Creation(self):
+        for (x, y), square in self.squares.items():
+            if square["type"] == "empty":
+                # Check right square
+                if (x, y+1) in self.squares and self.squares[(x, y+1)]["type"] == "wall":
+                    square["Right"] = False
+                # Check left square
+                if (x, y-1) in self.squares and self.squares[(x, y-1)]["type"] == "wall":
+                    square["Left"] = False
+                # Check down square
+                if (x+1, y) in self.squares and self.squares[(x+1, y)]["type"] == "wall":
+                    square["Down"] = False
+                # Check up square
+                if (x-1, y) in self.squares and self.squares[(x-1, y)]["type"] == "wall":
+                    square["Up"] = False
+
     def create_event_listeners(self):
         # Iterate over all squares
         for (x1, y1), square in self.squares.items():
