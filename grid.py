@@ -48,8 +48,6 @@ class GridApp:
         self.h_scrollbar.config(command=self.grid_canvas.xview)
         self.v_scrollbar.config(command=self.grid_canvas.yview)
 
-        # Bind the mousewheel scroll event
-        self.root.bind("<Control-MouseWheel>", self.zoom)
 
         # Label and Entry for grid width
         width_label = ctk.CTkLabel(master=self.left_frame, text="Width:")
@@ -132,7 +130,7 @@ class GridApp:
                     )
 
                     # Add the square to the dictionary
-                    self.squares[(row, col)] = {"Xpos": row, "Ypos": col, "rectangle": rectangle, "color": color , "type":"empty"  } 
+                    self.squares[(row, col)] = { "rectangle": rectangle , "type":"empty"  } 
 
             # Create event listeners for the squares
             self.create_event_listeners()
@@ -149,19 +147,7 @@ class GridApp:
         self.grid_canvas.update_idletasks()
         self.grid_canvas.config(scrollregion=self.grid_canvas.bbox('all'))   
 
-            
-    def zoom(self, event):
-    # Zoom in and out when the ctrl key and mouse wheel are used
-        if event.delta > 0 and self.zoom_level < 2.0:  # Limit zoom in level
-            # Zoom in
-            self.zoom_level += 0.1
-        elif event.delta < 0 and self.zoom_level > 1.0:  # Limit zoom out level
-            # Zoom out
-            self.zoom_level -= 0.1
-
-        # Scale the canvas
-        self.grid_canvas.scale("all", 0, 0, self.zoom_level, self.zoom_level)
-        self.update_scroll_region()    
+  
     
         
     def create_event_listeners(self):
