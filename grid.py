@@ -219,8 +219,8 @@ class GridApp:
         y_scroll_pos = self.grid_canvas.canvasy(event.y)
 
         # Calculate the grid coordinates of the square under the mouse
-        x = int((x_scroll_pos) // (30 * self.zoom_level))
-        y = int((y_scroll_pos) // (30 * self.zoom_level))
+        x = int((x_scroll_pos) // (30))
+        y = int((y_scroll_pos) // (30))
 
         # Check if the coordinates are valid
         if (x, y) in self.squares:
