@@ -1,8 +1,12 @@
 import tkinter as tk
+import json
+import os
 import customtkinter as ctk
+from tkinter import ttk
 
 class GridApp:
     def __init__(self, root):
+        self.Search__technqie = "BFS" 
         self.zoom_level = 1.0
         self.agent_square = None
         self.Goal_square = None
@@ -15,6 +19,7 @@ class GridApp:
         self.width_var = tk.StringVar()
         self.height_var = tk.StringVar()
 
+        
         # Set default grid dimensions
         self.width_var.set("5")
         self.height_var.set("5")
@@ -84,6 +89,27 @@ class GridApp:
         
         Print_Grid = ctk.CTkButton(master=self.left_frame, text="Print Grid", command=self.print_squares)
         Print_Grid.pack(pady=10)
+
+        # Create a style
+        style = ttk.Style()
+        style.theme_use('default')  # Use the default theme as a base
+
+        # Modify the Combobox's appearance to match the theme
+        style.configure('TCombobox', 
+                        selectbackground='#ADD8E6',  # Set the background color
+                        selectforeground='black') 
+        
+        # Create the Combobox after the "Print Grid" button
+        self.search_technique_var = tk.StringVar()
+        self.search_technique_var.set("BFS")  # default value
+
+        search_technique_label = ctk.CTkLabel(master=self.left_frame, text="Search Technique:")
+        search_technique_label.pack(padx=5, pady=5)
+
+        search_technique_combobox = ttk.Combobox(master=self.left_frame, textvariable=self.search_technique_var ,  state='readonly')
+        search_technique_combobox['values'] = ('BFS', 'DFS', 'A*')
+        search_technique_combobox.pack(padx=5, pady=5)
+
         # Initialize mode
         self.mode = "normal"
         
@@ -149,6 +175,7 @@ class GridApp:
         self.grid_canvas.update_idletasks()
         self.grid_canvas.config(scrollregion=self.grid_canvas.bbox('all'))   
 
+
   
     def Maze_Creation(self):
         for (x, y), square in self.squares.items():
@@ -165,6 +192,8 @@ class GridApp:
                 # Check up square
                 if (x-1, y) in self.squares and self.squares[(x-1, y)]["type"] == "wall":
                     square["Up"] = False
+
+
 
     def create_event_listeners(self):
         # Iterate over all squares
@@ -228,7 +257,8 @@ class GridApp:
                 self.grid_canvas.itemconfig(self.squares[(y, x)]["rectangle"], fill="dark blue")
                 self.squares[(y, x)]["type"] = "wall"
 
+  # Start the application's main loop
 if __name__ == "__main__":
     root = tk.Tk()
     app = GridApp(root)
-    root.mainloop()  # Start the application's main loop
+    root.mainloop()
