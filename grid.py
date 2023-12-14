@@ -141,8 +141,7 @@ class GridApp:
         Sets the mode to "Goal", which allows the user to set the goal point on the grid.
         """
         self.mode = "Goal"       
-
-        
+    
     def create_grid(self):
         """
         Creates a grid based on the user's input for width and height.
@@ -205,46 +204,44 @@ class GridApp:
         self.grid_canvas.config(scrollregion=self.grid_canvas.bbox('all'))   
 
     def solving(self):
-        self.Path={}
         self.Maze_Creation()
         self.maze = self.get_maze()
-        start = copy.deepcopy(self.agent_square)
-        self.queue = [start]
-        self.visited = [start]
-        self._solving_step()
+        self.start = copy.deepcopy(self.agent_square)
         self.cell = copy.deepcopy(self.Goal_square)
+        self._solving_step()
     
-    def _2_solving_step(self):
+    def Draw_visited(self ):
+        if self.x+1 >= len(self.Draw):
+            self.Draw_path()
+            return
+        else:
+            self.x+=1
+            self.update_maze(  "visited" , self.Draw[self.x])
+            self.root.after(20, self.Draw_visited)
+    
+    def Draw_path(self):
         if self.cell != self.agent_square:
             self.cell = self.Path[self.cell]
-            self.grid_canvas.itemconfig(self.squares[self.cell]["rectangle"], fill="black", outline="white", width=2)
-            self.squares[self.cell]["type"]="path"    
-            self.root.after(20, self._2_solving_step)
+            if self.cell != self.agent_square:
+                self.grid_canvas.itemconfig(self.squares[self.cell]["rectangle"], fill="black", outline="white", width=2)
+                self.squares[self.cell]["type"]="path"    
+                self.root.after(20, self.Draw_path)
             
     def _solving_step(self):
-        if len(self.queue) > 0:
             
             current_value = self.search_technique_combobox.get()
-            if current_value == 'DFS':
-                self.current = self.queue.pop()
-                
+            
             if current_value == 'BFS':
-                self.current = self.queue.pop(0)
+                self.Path , self.Draw = BFS(self.maze , self.start , self.Goal_square)
+                self.x=0
+                self.Draw_visited()
                 
-            if self.current == self.Goal_square:
-                self._2_solving_step()
-                return
+            
             if current_value == 'DFS':
-                DFS(self.maze , self.queue , self.visited , self.current , self.Path)
-                
-            if current_value == 'BFS':
-                BFS(self.maze , self.queue , self.visited , self.current , self.Path)
-                
-            self.update_maze(  "visited" , self.current)
-            self.root.after(20, self._solving_step)   
-            
-            
-            
+                self.Path , self.Draw = DFS(self.maze , self.start , self.Goal_square)
+                self.x=0
+                self.Draw_visited()
+          
     def Maze_Creation(self):
     
     #Creates a maze by checking the surrounding squares of each square in the grid.
@@ -271,7 +268,7 @@ class GridApp:
         return self.Maze_copy
 
     def update_maze(self, type, selected):
-        if selected != self.agent_square:
+        if selected != self.agent_square and selected != self.Goal_square:
             self.grid_canvas.itemconfig(self.squares[selected]["rectangle"], fill="#FFFF00", outline="black", width=2)
             self.squares[selected]["type"]=type
         
