@@ -1,15 +1,26 @@
 import tkinter as tk
+import copy
+from time import sleep
 import json
 import os
 import customtkinter as ctk
+from BFS import *
+from DFS import *
 from tkinter import ttk
 
 class GridApp:
+    """
+    This class represents a grid application with a GUI. It allows the user to create a grid of a specified size,
+    add walls, set a start point, set a goal point, and create a maze. The grid can be interacted with using the mouse.
+    """
     def __init__(self, root):
-        self.Search__technqie = "BFS" 
+        """
+        Initializes the grid application with a root window and default settings.
+        """
         self.zoom_level = 1.0
         self.agent_square = None
         self.Goal_square = None
+        
         # Initialize the root window
         self.root = root
         self.root.configure(bg='#87CEFA')  # Set background color
@@ -84,7 +95,7 @@ class GridApp:
         Goal = ctk.CTkButton(master=self.left_frame, text="Goal" , command=self.Goal)
         Goal.pack(pady=10)
 
-        Create_Maze = ctk.CTkButton(master=self.left_frame, text="Create Maze"  , command=self.Maze_Creation)
+        Create_Maze = ctk.CTkButton(master=self.left_frame, text="Create Maze"  , command=self.solving)
         Create_Maze.pack(pady=10)
         
         Print_Grid = ctk.CTkButton(master=self.left_frame, text="Print Grid", command=self.print_squares)
@@ -103,27 +114,39 @@ class GridApp:
         self.search_technique_var = tk.StringVar()
         self.search_technique_var.set("BFS")  # default value
 
-        search_technique_label = ctk.CTkLabel(master=self.left_frame, text="Search Technique:")
-        search_technique_label.pack(padx=5, pady=5)
+        self.search_technique_label = ctk.CTkLabel(master=self.left_frame, text="Search Technique:")
+        self.search_technique_label.pack(padx=5, pady=5)
 
-        search_technique_combobox = ttk.Combobox(master=self.left_frame, textvariable=self.search_technique_var ,  state='readonly')
-        search_technique_combobox['values'] = ('BFS', 'DFS', 'A*')
-        search_technique_combobox.pack(padx=5, pady=5)
+        self.search_technique_combobox = ttk.Combobox(master=self.left_frame, textvariable=self.search_technique_var ,  state='readonly')
+        self.search_technique_combobox['values'] = ('BFS', 'DFS', 'A*')
+        self.search_technique_combobox.pack(padx=5, pady=5)
 
         # Initialize mode
         self.mode = "normal"
         
     def walls(self):
+        """
+        Sets the mode to "walls", which allows the user to add walls to the grid.
+        """
         self.mode = "walls"
         
     def start(self):
+        """
+        Sets the mode to "start", which allows the user to set the start point on the grid.
+        """
         self.mode = "start"    
         
     def Goal(self):
+        """
+        Sets the mode to "Goal", which allows the user to set the goal point on the grid.
+        """
         self.mode = "Goal"       
-    
+
         
     def create_grid(self):
+        """
+        Creates a grid based on the user's input for width and height.
+        """
         try:
             # Delete the existing canvas
             self.grid_canvas.delete("all")
@@ -158,7 +181,7 @@ class GridApp:
                     )
 
                     # Add the square to the dictionary
-                    self.squares[(row, col)] = { "rectangle": rectangle , "type":"empty" , "Up": True  , "Down":True , "Left":True , "Right":True} 
+                    self.squares[(row, col)] = { "rectangle": rectangle , "type":"empty" , "N": True  , "S":True , "W":True , "E":True} 
 
             # Create event listeners for the squares
             self.create_event_listeners()
@@ -167,35 +190,95 @@ class GridApp:
         except ValueError:
             return
         
-        
     def print_squares(self):
+        """
+        Prints the squares in the grid.
+        """
         for key, value in self.squares.items():
-            print(f"{key}: {value}\n")
+            print(f"{key}: {value}\n")            
+            
     def update_scroll_region(self):
+        """
+        Updates the scroll region of the canvas to include all items.
+        """
         self.grid_canvas.update_idletasks()
         self.grid_canvas.config(scrollregion=self.grid_canvas.bbox('all'))   
 
-
-  
+    def solving(self):
+        self.Path={}
+        self.Maze_Creation()
+        self.maze = self.get_maze()
+        start = copy.deepcopy(self.agent_square)
+        self.queue = [start]
+        self.visited = [start]
+        self._solving_step()
+        self.cell = copy.deepcopy(self.Goal_square)
+    
+    def _2_solving_step(self):
+        if self.cell != self.agent_square:
+            self.cell = self.Path[self.cell]
+            self.grid_canvas.itemconfig(self.squares[self.cell]["rectangle"], fill="black", outline="white", width=2)
+            self.squares[self.cell]["type"]="path"    
+            self.root.after(20, self._2_solving_step)
+            
+    def _solving_step(self):
+        if len(self.queue) > 0:
+            
+            current_value = self.search_technique_combobox.get()
+            if current_value == 'DFS':
+                self.current = self.queue.pop()
+                
+            if current_value == 'BFS':
+                self.current = self.queue.pop(0)
+                
+            if self.current == self.Goal_square:
+                self._2_solving_step()
+                return
+            if current_value == 'DFS':
+                DFS(self.maze , self.queue , self.visited , self.current , self.Path)
+                
+            if current_value == 'BFS':
+                BFS(self.maze , self.queue , self.visited , self.current , self.Path)
+                
+            self.update_maze(  "visited" , self.current)
+            self.root.after(20, self._solving_step)   
+            
+            
+            
     def Maze_Creation(self):
+    
+    #Creates a maze by checking the surrounding squares of each square in the grid.
+    
         for (x, y), square in self.squares.items():
-            if square["type"] == "empty":
                 # Check right square
-                if (x, y+1) in self.squares and self.squares[(x, y+1)]["type"] == "wall":
-                    square["Right"] = False
+                if not((x, y+1) in self.squares) or self.squares[(x, y+1)]["type"] == "wall":
+                    square["E"] = False
                 # Check left square
-                if (x, y-1) in self.squares and self.squares[(x, y-1)]["type"] == "wall":
-                    square["Left"] = False
+                if not((x, y-1) in self.squares) or self.squares[(x, y-1)]["type"] == "wall":
+                    square["W"] = False
                 # Check down square
-                if (x+1, y) in self.squares and self.squares[(x+1, y)]["type"] == "wall":
-                    square["Down"] = False
+                if not((x+1, y) in self.squares) or self.squares[(x+1, y)]["type"] == "wall":
+                    square["S"] = False
                 # Check up square
-                if (x-1, y) in self.squares and self.squares[(x-1, y)]["type"] == "wall":
-                    square["Up"] = False
+                if not((x-1, y) in self.squares) or self.squares[(x-1, y)]["type"] == "wall":
+                    square["N"] = False
 
+    def get_maze(self):
+        self.Maze_copy = copy.deepcopy(self.squares)
+        for key in self.Maze_copy:
+            self.Maze_copy[key].pop("rectangle", None)
+            self.Maze_copy[key].pop("type", None)
+        return self.Maze_copy
 
-
+    def update_maze(self, type, selected):
+        if selected != self.agent_square:
+            self.grid_canvas.itemconfig(self.squares[selected]["rectangle"], fill="#FFFF00", outline="black", width=2)
+            self.squares[selected]["type"]=type
+        
     def create_event_listeners(self):
+        """
+        Creates event listeners for each square in the grid.
+        """
         # Iterate over all squares
         for (x1, y1), square in self.squares.items():
             # Hover effect
@@ -243,6 +326,9 @@ class GridApp:
         self.grid_canvas.bind("<B1-Motion>", self.on_drag)
         
     def on_drag(self, event):
+        """
+        Handles the event when the user drags the mouse over the grid.
+        """
         # Get the current scroll position
         x_scroll_pos = self.grid_canvas.canvasx(event.x)
         y_scroll_pos = self.grid_canvas.canvasy(event.y)
@@ -256,9 +342,3 @@ class GridApp:
             if self.mode == "walls":
                 self.grid_canvas.itemconfig(self.squares[(y, x)]["rectangle"], fill="dark blue")
                 self.squares[(y, x)]["type"] = "wall"
-
-  # Start the application's main loop
-if __name__ == "__main__":
-    root = tk.Tk()
-    app = GridApp(root)
-    root.mainloop()
