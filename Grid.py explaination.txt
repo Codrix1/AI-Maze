@@ -1,57 +1,49 @@
-------Interactive Grid Application------
+Interactive Grid Application
 
 This application is a graphical user interface (GUI) for creating and interacting with a grid. It is implemented in Python using the Tkinter library for the GUI and a custom library called customtkinter for additional widgets.
 Features
 
 - Create a grid of customizable size.
 - Add walls, start, and goal points to the grid.
+- Solve the maze using different algorithms (BFS, DFS, A).
+- Clear the grid or specific cells.
 - Print the grid's current state to the console.
-- Create a maze by blocking paths between squares based on the presence of walls.
 
-
-------Code Explanation------
+## Code Explanation
 
 The application is encapsulated in a class called GridApp. Here's a breakdown of its main components:
 
-
-------Initialization------
+### Initialization
 
 The __init__ method initializes the application. It sets up the main window, creates the grid canvas and other widgets, and binds event listeners to the squares in the grid.
 
-
-
-------Grid Creation------
-
+### Grid Creation
 
 The create_grid method creates a grid of squares. The size of the grid is determined by the user's input. Each square is represented as a rectangle on the canvas and stored in the self.squares dictionary, where the key is a tuple of the square's coordinates and the value is another dictionary storing information about the square.
 
-
-
-------Event Listeners------
+### Event Listeners
 
 The create_event_listeners method binds mouse events to each square in the grid. It changes the color of the square when the mouse hovers over it and updates the square's type when it is clicked, based on the current mode.
 
+### Maze Solving
 
-------Maze Creation------
+The solving method solves the maze using the selected algorithm (BFS, DFS, A). It finds a path from the start point to the goal point and highlights this path on the grid.
+Clearing
 
-The Maze_Creation method updates the connectivity of each square in the grid based on the presence of walls. For each square, it checks the squares to the right, left, up, and down. If any of these adjacent squares are of type "wall", it updates the corresponding direction in the current square's dictionary to False, indicating that there is no path in that direction due to the wall.
-
-------Modes------
+The clear method clears the grid or specific cells, depending on the current mode. If the mode is "clear", it changes the type of the clicked square back to "empty".
+Modes
 
 The application has several modes that determine what happens when a square is clicked:
 
 - "walls": A wall is added to the clicked square.
 - "start": The clicked square is set as the start point.
 - "Goal": The clicked square is set as the goal point.
+- "clear": The clicked square is changed back to "empty".
 
 The mode can be changed by clicking the corresponding button in the GUI.
-
-
-------Printing the Grid------
+Printing the Grid
 
 The print_squares method prints the current state of the grid to the console. It iterates over the self.squares dictionary and prints the coordinates and information of each square.
-
-
-------Usage------
+Usage
 
 To run the application, execute the grid.py script. A window will open with the GUI. Enter the desired grid dimensions, click the "Create Grid" button to create the grid, and use the other buttons to interact with the grid.

@@ -6,6 +6,7 @@ import os
 import customtkinter as ctk
 from BFS import *
 from DFS import *
+from A_Star import *
 from tkinter import ttk
 
 class GridApp:
@@ -17,9 +18,11 @@ class GridApp:
         """
         Initializes the grid application with a root window and default settings.
         """
+        self.mx = None
+        self.yx = None
         self.zoom_level = 1.0
         self.agent_square = None
-        self.Goal_square = None
+        self.Goal_square = []  # Changed to a list to support multiple goals
         
         # Initialize the root window
         self.root = root
@@ -85,7 +88,10 @@ class GridApp:
         )
         create_button.pack(pady=10)
 
-        # Add your 4 new buttons here
+        # Add your 5 new buttons here
+        Clear = ctk.CTkButton(master=self.left_frame, text="Clear" , command=self.clear)
+        Clear.pack(pady=10)
+
         Walls = ctk.CTkButton(master=self.left_frame, text="Walls" , command=self.walls)
         Walls.pack(pady=10)
 
@@ -95,8 +101,8 @@ class GridApp:
         Goal = ctk.CTkButton(master=self.left_frame, text="Goal" , command=self.Goal)
         Goal.pack(pady=10)
 
-        Create_Maze = ctk.CTkButton(master=self.left_frame, text="Create Maze"  , command=self.solving)
-        Create_Maze.pack(pady=10)
+        Solve_Maze = ctk.CTkButton(master=self.left_frame, text="Solve Maze", command=self.set_solving_mode)
+        Solve_Maze.pack(pady=10)
         
         Print_Grid = ctk.CTkButton(master=self.left_frame, text="Print Grid", command=self.print_squares)
         Print_Grid.pack(pady=10)
@@ -124,28 +130,47 @@ class GridApp:
         # Initialize mode
         self.mode = "normal"
         
+    def set_solving_mode(self):
+        self.mode = "solving"
+        self.solving()
+
+    def clear(self):
+        """
+        Sets the mode to "clear", which allows the user to change the type of any cell back to "empty".
+        """
+        if self.mode == "solving":
+            return
+        self.mode = "clear"
+        
     def walls(self):
         """
         Sets the mode to "walls", which allows the user to add walls to the grid.
         """
+        if self.mode == "solving":
+            return
         self.mode = "walls"
         
     def start(self):
         """
         Sets the mode to "start", which allows the user to set the start point on the grid.
         """
+        if self.mode == "solving":
+            return
         self.mode = "start"    
         
     def Goal(self):
         """
         Sets the mode to "Goal", which allows the user to set the goal point on the grid.
         """
+        if self.mode == "solving":
+            return
         self.mode = "Goal"       
     
     def create_grid(self):
         """
         Creates a grid based on the user's input for width and height.
         """
+        self.mode = "normal"
         try:
             # Delete the existing canvas
             self.grid_canvas.delete("all")
@@ -153,10 +178,12 @@ class GridApp:
             # Reset the squares dictionary, the agent square, and the Goal square
             self.squares = {}
             self.agent_square = None
-            self.Goal_square = None
+            self.Goal_square = []  # Reset the Goal square list
 
             # Get the width and height from the user inputs
+            self.mx= int(self.width_var.get())  
             width = int(self.width_var.get())
+            self.my= int(self.height_var.get())  
             height = int(self.height_var.get())
 
             # Set the canvas size based on the grid dimensions
@@ -207,22 +234,27 @@ class GridApp:
         self.Maze_Creation()
         self.maze = self.get_maze()
         self.start = copy.deepcopy(self.agent_square)
-        self.cell = copy.deepcopy(self.Goal_square)
         self._solving_step()
     
     def Draw_visited(self ):
         if self.x+1 >= len(self.Draw):
-            self.Draw_path()
-            return
+            
+            self.fwdPath={}
+            while self.cell != self.agent_square:
+                self.fwdPath[self.Path[self.cell]]=self.cell
+                self.cell=self.Path[self.cell]
+            self.cell = self.agent_square    
+            self.root.after(20, self.Draw_path)
+            
         else:
             self.x+=1
             self.update_maze(  "visited" , self.Draw[self.x])
             self.root.after(20, self.Draw_visited)
     
     def Draw_path(self):
-        if self.cell != self.agent_square:
-            self.cell = self.Path[self.cell]
-            if self.cell != self.agent_square:
+        if not self.cell in self.Goal_square:
+            self.cell = self.fwdPath[self.cell]
+            if self.cell != self.agent_square and not self.cell in self.Goal_square:
                 self.grid_canvas.itemconfig(self.squares[self.cell]["rectangle"], fill="black", outline="white", width=2)
                 self.squares[self.cell]["type"]="path"    
                 self.root.after(20, self.Draw_path)
@@ -232,15 +264,20 @@ class GridApp:
             current_value = self.search_technique_combobox.get()
             
             if current_value == 'BFS':
-                self.Path , self.Draw = BFS(self.maze , self.start , self.Goal_square)
+                self.Path , self.Draw , self.cell = BFS(self.maze , self.start , self.Goal_square)
                 self.x=0
                 self.Draw_visited()
                 
             
             if current_value == 'DFS':
-                self.Path , self.Draw = DFS(self.maze , self.start , self.Goal_square)
+                self.Path , self.Draw , self.cell = DFS(self.maze , self.start , self.Goal_square)
                 self.x=0
                 self.Draw_visited()
+            
+            if current_value == 'A*':
+                self.Path , self.Draw , self.cell = A_star(self.mx , self.my , self.start , self.Goal_square , self.maze)
+                self.x=0
+                self.Draw_visited()    
           
     def Maze_Creation(self):
     
@@ -268,7 +305,7 @@ class GridApp:
         return self.Maze_copy
 
     def update_maze(self, type, selected):
-        if selected != self.agent_square and selected != self.Goal_square:
+        if selected != self.agent_square and selected not in self.Goal_square:
             self.grid_canvas.itemconfig(self.squares[selected]["rectangle"], fill="#FFFF00", outline="black", width=2)
             self.squares[selected]["type"]=type
         
@@ -276,6 +313,11 @@ class GridApp:
         """
         Creates event listeners for each square in the grid.
         """
+        if self.mode == "solving":
+            # Unbind the events
+            self.grid_canvas.unbind("<Button-1>")
+            self.grid_canvas.unbind("<B1-Motion>")
+            return
         # Iterate over all squares
         for (x1, y1), square in self.squares.items():
             # Hover effect
@@ -288,10 +330,19 @@ class GridApp:
                     self.grid_canvas.itemconfig(self.squares[(x, y)]["rectangle"], fill ="#ADD8E6", outline="black", width=2)
 
             def on_click(x, y):
-                if self.mode == "walls" and self.squares[(x, y)]["type"] == "empty":
+                if self.mode == "solving":
+                    return
+                if self.mode == "clear":
+                    if self.squares[(x, y)]["type"] == "agent":
+                        self.agent_square = None
+                    elif self.squares[(x, y)]["type"] == "Goal":
+                        self.Goal_square.remove((x, y))  # Remove the square from the Goal_square list
+                    self.grid_canvas.itemconfig(self.squares[(x, y)]["rectangle"], fill="#ADD8E6")
+                    self.squares[(x, y)]["type"] = "empty"
+                elif self.mode == "walls" and self.squares[(x, y)]["type"] == "empty":
                     self.grid_canvas.itemconfig(self.squares[(x, y)]["rectangle"], fill="dark blue")
                     self.squares[(x, y)]["type"] = "wall"
-                if self.mode == "start" and self.squares[(x, y)]["type"] == "empty":
+                elif self.mode == "start" and self.squares[(x, y)]["type"] == "empty":
                     if self.agent_square:
                         # Reset the previous agent square
                         self.grid_canvas.itemconfig(self.squares[self.agent_square]["rectangle"], fill="#ADD8E6")
@@ -301,15 +352,11 @@ class GridApp:
                     self.squares[(x, y)]["type"] = "agent"
                     self.agent_square = (x, y)
                     
-                if self.mode == "Goal" and self.squares[(x, y)]["type"] == "empty" :
-                    if self.Goal_square:
-                        # Reset the previous Goal square
-                        self.grid_canvas.itemconfig(self.squares[self.Goal_square]["rectangle"], fill="#ADD8E6")
-                        self.squares[self.Goal_square]["type"] = "empty"
+                elif self.mode == "Goal" and self.squares[(x, y)]["type"] == "empty" :
                     # Set the new Goal square
                     self.grid_canvas.itemconfig(self.squares[(x, y)]["rectangle"], fill="red")
                     self.squares[(x, y)]["type"] = "Goal"
-                    self.Goal_square = (x, y)
+                    self.Goal_square.append((x, y))  # Add the square to the Goal_square list
 
             def create_callback(func, x, y):
                 return lambda event: func(x, y)
@@ -326,6 +373,8 @@ class GridApp:
         """
         Handles the event when the user drags the mouse over the grid.
         """
+        if self.mode == "solving":
+            return
         # Get the current scroll position
         x_scroll_pos = self.grid_canvas.canvasx(event.x)
         y_scroll_pos = self.grid_canvas.canvasy(event.y)

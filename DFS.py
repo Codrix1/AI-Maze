@@ -1,5 +1,5 @@
-
-def DFS(m,start , goal ):
+import copy
+def DFS(m,start , goal):
     expand =[]
     queue = [start]
     dfsPath = {}
@@ -8,7 +8,9 @@ def DFS(m,start , goal ):
     while len(queue)>0:
         currCell=queue.pop()
         expand.append(currCell)
-        if currCell==goal:
+        if currCell in goal:
+            
+            end = copy.deepcopy(currCell)
             break
         for d in 'ESNW':
             if m[currCell][d]==True:
@@ -26,4 +28,4 @@ def DFS(m,start , goal ):
                 visited.append(childCell)
                 dfsPath[childCell] = currCell
         
-    return  dfsPath , expand
+    return  dfsPath , expand , end

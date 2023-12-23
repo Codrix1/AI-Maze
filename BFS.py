@@ -1,5 +1,5 @@
-
-def BFS(m,start , goal ):
+import copy
+def BFS(m,start , goal  ):
     expand =[start]
     queue = [start]
     bfsPath = {}
@@ -8,7 +8,8 @@ def BFS(m,start , goal ):
     while len(queue)>0:
         currCell=queue.pop(0)
         expand.append(currCell)
-        if currCell==goal:
+        if currCell in goal:
+            end = copy.deepcopy(currCell)
             break
         for d in 'ESNW':
             if m[currCell][d]==True:
@@ -26,4 +27,4 @@ def BFS(m,start , goal ):
                 visited.append(childCell)
                 bfsPath[childCell] = currCell
         
-    return  bfsPath , expand
+    return  bfsPath , expand , end
