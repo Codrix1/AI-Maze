@@ -21,7 +21,7 @@ Features
 
 1. Ensure that you have Python 3 installed on your machine.
 2. Install the required dependencies.
-3. Run python main.py to start the application.
+3. Run python maze.py to start the application.
 
 ## Usage
 
